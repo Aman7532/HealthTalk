@@ -14,11 +14,31 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/Aman7532/HealthTalk.git'
             }
         }
+        
+        stage('Setup Python Environment') {
+            steps {
+                sh '''
+                    # Install venv if not already installed
+                    python3 -m pip install virtualenv
+                    
+                    # Create and activate a virtual environment
+                    python3 -m venv venv
+                    
+                    # Install requirements
+                    . venv/bin/activate
+                    pip install -r healthcare_chatbot_backend/requirements.txt
+                    deactivate
+                '''
+            }
+        }
 
         stage('Test Model') {
             steps {
-                sh 'pwd'
-                sh 'python3 training/test.py'
+                sh '''
+                    . venv/bin/activate
+                    python3 training/test.py
+                    deactivate
+                '''
             }
         }
 
@@ -76,11 +96,19 @@ pipeline {
         stage('Deploy with Kubernetes') {
             steps {
                 script {
-                    sh 'kubectl apply -f kubernetes/frontend.yaml'
-                    sh 'kubectl apply -f kubernetes/backend.yaml'
-                    sh 'kubectl apply -f kubernetes/elasticsearch.yaml'
-                    sh 'kubectl apply -f kubernetes/kibana.yaml'
-                    sh 'kubectl apply -f kubernetes/logstash.yaml'
+                    sh '''
+                        . venv/bin/activate
+                        # Install kubectl if needed
+                        pip install kubernetes
+                        
+                        kubectl apply -f kubernetes/frontend.yaml
+                        kubectl apply -f kubernetes/backend.yaml
+                        kubectl apply -f kubernetes/elasticsearch.yaml
+                        kubectl apply -f kubernetes/kibana.yaml
+                        kubectl apply -f kubernetes/logstash.yaml
+                        
+                        deactivate
+                    '''
                 }
             }
         }
