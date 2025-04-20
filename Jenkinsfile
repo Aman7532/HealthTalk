@@ -16,21 +16,23 @@ pipeline {
         }
         
         stage('Setup Python Environment') {
-            steps {
-                sh '''
-                    # Install venv if not already installed
-                    python3 -m pip install virtualenv
-                    
-                    # Create and activate a virtual environment
-                    python3 -m venv venv
-                    
-                    # Install requirements
-                    . venv/bin/activate
-                    pip install -r healthcare_chatbot_backend/requirements.txt
-                    deactivate
-                '''
-            }
-        }
+    steps {
+        sh '''
+            # Install venv if not already installed
+            python3 -m pip install virtualenv
+            
+            # Create and activate a virtual environment
+            python3 -m venv venv
+            
+            # Install packages in a specific order with fixed versions
+            . venv/bin/activate
+            pip install numpy==1.23.5
+            pip install scikit-learn==1.2.2
+            pip install -r healthcare_chatbot_backend/requirements.txt
+            deactivate
+        '''
+    }
+}
 
         stage('Test Model') {
             steps {
