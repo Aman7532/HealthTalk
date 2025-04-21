@@ -15,31 +15,48 @@ pipeline {
             }
         }
         
-        stage('Setup Python Environment') {
-    steps {
-        sh '''
-            # Install venv if not already installed
-            python3 -m pip install virtualenv
-            
-            # Create and activate a virtual environment
-            python3 -m venv venv
-            
-            # Install packages in a specific order with fixed versions
-            . venv/bin/activate
-            pip install numpy==1.23.5
-            pip install scikit-learn==1.2.2
-            pip install -r healthcare_chatbot_backend/requirements.txt
-            deactivate
-        '''
-    }
-}
+        stage('Setup Conda Environment') {
+            steps {
+                sh '''
+                    # Install miniconda if not already installed
+                    if [ ! -d "$HOME/miniconda3" ]; then
+                        curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+                        bash Miniconda3-latest-MacOSX-x86_64.sh -b
+                        rm Miniconda3-latest-MacOSX-x86_64.sh
+                    fi
+                    
+                    # Add conda to path
+                    export PATH="$HOME/miniconda3/bin:$PATH"
+                    
+                    # Remove existing environment if it exists
+                    conda env remove -n healthcare_env -y || true
+                    
+                    # Create conda environment
+                    conda create -y -n healthcare_env python=3.9
+                    
+                    # Activate conda environment
+                    source $HOME/miniconda3/bin/activate healthcare_env
+                    
+                    # Install packages with conda first
+                    conda install -y numpy=1.23.5 scipy pandas scikit-learn=1.2.2
+                    
+                    # Install remaining packages with pip
+                    pip install flask google-generativeai python-dotenv langchain PyPDF2 faiss-cpu
+                    pip install langchain_google_genai torch langchain-community nltk flask_cors python-logstash python-logstash-async
+                    
+                    # Deactivate conda environment
+                    conda deactivate
+                '''
+            }
+        }
 
         stage('Test Model') {
             steps {
                 sh '''
-                    . venv/bin/activate
+                    export PATH="$HOME/miniconda3/bin:$PATH"
+                    source $HOME/miniconda3/bin/activate healthcare_env
                     python3 training/test.py
-                    deactivate
+                    conda deactivate
                 '''
             }
         }
@@ -99,8 +116,10 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        . venv/bin/activate
-                        # Install kubectl if needed
+                        export PATH="$HOME/miniconda3/bin:$PATH"
+                        source $HOME/miniconda3/bin/activate healthcare_env
+                        
+                        # Install kubernetes python client if needed
                         pip install kubernetes
                         
                         kubectl apply -f kubernetes/frontend.yaml
@@ -109,7 +128,7 @@ pipeline {
                         kubectl apply -f kubernetes/kibana.yaml
                         kubectl apply -f kubernetes/logstash.yaml
                         
-                        deactivate
+                        conda deactivate
                     '''
                 }
             }
