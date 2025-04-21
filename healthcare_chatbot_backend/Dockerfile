@@ -1,22 +1,24 @@
-# Use the official Python image as the base image
-FROM python:3.9-slim
+# Use a specific Python version to avoid compatibility issues
+FROM python:3.8-slim
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file and install the dependencies
+# Copy the requirements file 
 COPY requirements.txt .
 
-# Install packages with specific versions to fix compatibility issues
-RUN pip install numpy==1.23.5
-RUN pip install scipy==1.9.3
-RUN pip install scikit-learn==1.2.2
+# Install NumPy and other dependencies with specific versions before other packages
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir numpy==1.21.6 && \
+    pip install --no-cache-dir scipy==1.7.3 && \
+    pip install --no-cache-dir scikit-learn==1.0.2 && \
+    pip install --no-cache-dir nltk==3.7
+
+# Now install NLTK data before other requirements
+RUN python -m nltk.downloader punkt
 
 # Install the rest of the requirements
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Download necessary NLTK data
-RUN python -c "import nltk; nltk.download('punkt')"
 
 # Copy the entire project directory
 COPY . .
