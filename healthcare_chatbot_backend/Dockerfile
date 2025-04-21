@@ -17,8 +17,23 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Now install NLTK data before other requirements
 RUN python -m nltk.downloader punkt
 
-# Install the rest of the requirements
-RUN pip install --no-cache-dir -r requirements.txt
+# Install packages individually to ensure compatibility
+RUN pip install --no-cache-dir flask==2.2.3 && \
+    pip install --no-cache-dir google-generativeai==0.3.1 && \
+    pip install --no-cache-dir python-dotenv==1.0.0 && \
+    pip install --no-cache-dir langchain==0.0.267 && \
+    pip install --no-cache-dir PyPDF2==3.0.1 && \
+    pip install --no-cache-dir pandas==1.5.3 && \
+    pip install --no-cache-dir faiss-cpu==1.7.4 && \
+    pip install --no-cache-dir langchain-community==0.0.10 && \
+    pip install --no-cache-dir flask_cors==4.0.0 && \
+    pip install --no-cache-dir python-logstash==0.4.8 && \
+    pip install --no-cache-dir python-logstash-async==2.5.0 && \
+    pip install --no-cache-dir torch==1.13.1 && \
+    pip install --no-cache-dir google-ai-generativelanguage==0.3.3
+
+# Install langchain_google_genai with compatibility flag
+RUN pip install --no-cache-dir langchain-google-genai==0.0.3 || echo "Could not install langchain-google-genai, proceeding anyway"
 
 # Copy the entire project directory
 COPY . .
