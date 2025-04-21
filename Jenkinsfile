@@ -31,18 +31,37 @@ pipeline {
                     # Remove existing environment if it exists
                     conda env remove -n healthcare_env -y || true
                     
-                    # Create conda environment
+                    # Create conda environment with specific Python version
                     conda create -y -n healthcare_env python=3.9
                     
                     # Activate conda environment
                     source $HOME/miniconda3/bin/activate healthcare_env
                     
-                    # Install packages with conda first
-                    conda install -y numpy=1.23.5 scipy pandas scikit-learn=1.2.2
+                    # Install packages with specific versions to avoid compatibility issues
+                    conda install -y numpy=1.23.5
+                    conda install -y scipy=1.9.3
+                    conda install -y pandas=1.5.3
+                    conda install -y scikit-learn=1.2.2
+                    conda install -y nltk
+                    
+                    # Install PyTorch (CPU version for faster install)
+                    conda install -y pytorch cpuonly -c pytorch
                     
                     # Install remaining packages with pip
-                    pip install flask google-generativeai python-dotenv langchain PyPDF2 faiss-cpu
-                    pip install langchain_google_genai torch langchain-community nltk flask_cors python-logstash python-logstash-async
+                    pip install flask==2.2.3
+                    pip install google-generativeai==0.3.1
+                    pip install python-dotenv==1.0.0
+                    pip install langchain==0.0.267
+                    pip install PyPDF2==3.0.1
+                    pip install faiss-cpu==1.7.4
+                    pip install langchain_google_genai==0.0.6
+                    pip install langchain-community==0.0.10
+                    pip install flask_cors==4.0.0
+                    pip install python-logstash==0.4.8
+                    pip install python-logstash-async==2.5.0
+                    
+                    # Install kubernetes client for deployment
+                    pip install kubernetes
                     
                     # Deactivate conda environment
                     conda deactivate
@@ -118,9 +137,6 @@ pipeline {
                     sh '''
                         export PATH="$HOME/miniconda3/bin:$PATH"
                         source $HOME/miniconda3/bin/activate healthcare_env
-                        
-                        # Install kubernetes python client if needed
-                        pip install kubernetes
                         
                         kubectl apply -f kubernetes/frontend.yaml
                         kubectl apply -f kubernetes/backend.yaml
