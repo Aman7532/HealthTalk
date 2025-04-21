@@ -133,13 +133,12 @@ pipeline {
                     // Build image with latest tag
                     sh "/usr/local/bin/docker build -t aman7532/train-model:latest -f training/Dockerfile training"
                     
-                    // Tag with build number
-                    sh "/usr/local/bin/docker tag aman7532/train-model:latest aman7532/train-model:${env.BUILD_NUMBER}"
-                    
-                    // Push both tags
-                    withDockerRegistry([credentialsId: "DockerHubCred", url: ""]) {
+                    // Login directly using credentials
+                    withCredentials([usernamePassword(credentialsId: 'DockerHubCred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh 'echo "$DOCKER_PASS" | /usr/local/bin/docker login -u "$DOCKER_USER" --password-stdin'
+                        
+                        // Push the latest tag
                         sh "/usr/local/bin/docker push aman7532/train-model:latest"
-                        sh "/usr/local/bin/docker push aman7532/train-model:${env.BUILD_NUMBER}"
                     }
                 }
             }
@@ -158,7 +157,8 @@ pipeline {
         stage('Push Docker Frontend Image') {
             steps {
                 script {
-                    withDockerRegistry([credentialsId: "DockerHubCred", url: ""]) {
+                    withCredentials([usernamePassword(credentialsId: 'DockerHubCred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh 'echo "$DOCKER_PASS" | /usr/local/bin/docker login -u "$DOCKER_USER" --password-stdin'
                         sh "/usr/local/bin/docker push aman7532/react-app:frontend1"
                     }
                 }
@@ -178,7 +178,8 @@ pipeline {
         stage('Push Docker Backend Image') {
             steps {
                 script {
-                    withDockerRegistry([credentialsId: "DockerHubCred", url: ""]) {
+                    withCredentials([usernamePassword(credentialsId: 'DockerHubCred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh 'echo "$DOCKER_PASS" | /usr/local/bin/docker login -u "$DOCKER_USER" --password-stdin'
                         sh "/usr/local/bin/docker push aman7532/flask-app:backend1"
                     }
                 }
@@ -192,12 +193,12 @@ pipeline {
                         export PATH="$HOME/miniconda3/bin:$PATH"
                         source $HOME/miniconda3/bin/activate healthcare_env
                         
-                        # Assuming kubectl is in /usr/local/bin or modify path as needed
-                        /usr/local/bin/kubectl apply -f kubernetes/frontend.yaml || echo "kubectl frontend failed"
-                        /usr/local/bin/kubectl apply -f kubernetes/backend.yaml || echo "kubectl backend failed"
-                        /usr/local/bin/kubectl apply -f kubernetes/elasticsearch.yaml || echo "kubectl elasticsearch failed"
-                        /usr/local/bin/kubectl apply -f kubernetes/kibana.yaml || echo "kubectl kibana failed"
-                        /usr/local/bin/kubectl apply -f kubernetes/logstash.yaml || echo "kubectl logstash failed"
+                        # Assuming kubectl is in /opt/homebrew/bin as per your other project
+                        /opt/homebrew/bin/kubectl apply -f kubernetes/frontend.yaml || echo "kubectl frontend failed"
+                        /opt/homebrew/bin/kubectl apply -f kubernetes/backend.yaml || echo "kubectl backend failed"
+                        /opt/homebrew/bin/kubectl apply -f kubernetes/elasticsearch.yaml || echo "kubectl elasticsearch failed"
+                        /opt/homebrew/bin/kubectl apply -f kubernetes/kibana.yaml || echo "kubectl kibana failed"
+                        /opt/homebrew/bin/kubectl apply -f kubernetes/logstash.yaml || echo "kubectl logstash failed"
                         
                         conda deactivate
                     '''
