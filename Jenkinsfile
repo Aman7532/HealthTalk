@@ -117,12 +117,22 @@ pipeline {
             }
         }
 
+        stage('Debug Docker') {
+            steps {
+                script {
+                    sh 'whoami'
+                    sh '/usr/local/bin/docker version || echo "Docker version command failed"' 
+                    sh '/usr/local/bin/docker info || echo "Docker info command failed"'
+                }
+            }
+        }
+
         stage('Train Model') {
             steps {
                 script {
-                    def trainImage = docker.build("aman7532/train-model:latest", '-f training/Dockerfile training')
+                    def trainImage = sh(script: "/usr/local/bin/docker build -t aman7532/train-model:latest -f training/Dockerfile training", returnStdout: true).trim()
                     withDockerRegistry([credentialsId: "DockerHubCred", url: ""]) {
-                        trainImage.push("${env.BUILD_NUMBER}")
+                        sh "/usr/local/bin/docker push aman7532/train-model:${env.BUILD_NUMBER}"
                     }
                 }
             }
@@ -132,7 +142,7 @@ pipeline {
             steps {
                 dir('healthcare_chatbot_frontend') {
                     script {
-                        frontendImage = docker.build("aman7532/react-app:frontend1")
+                        sh "/usr/local/bin/docker build -t aman7532/react-app:frontend1 ."
                     }
                 }
             }
@@ -142,7 +152,7 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry([credentialsId: "DockerHubCred", url: ""]) {
-                        frontendImage.push()
+                        sh "/usr/local/bin/docker push aman7532/react-app:frontend1"
                     }
                 }
             }
@@ -152,7 +162,7 @@ pipeline {
             steps {
                 dir('healthcare_chatbot_backend') {
                     script {
-                        backendImage = docker.build("aman7532/flask-app:backend1")
+                        sh "/usr/local/bin/docker build -t aman7532/flask-app:backend1 ."
                     }
                 }
             }
@@ -162,7 +172,7 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry([credentialsId: "DockerHubCred", url: ""]) {
-                        backendImage.push()
+                        sh "/usr/local/bin/docker push aman7532/flask-app:backend1"
                     }
                 }
             }
@@ -175,11 +185,12 @@ pipeline {
                         export PATH="$HOME/miniconda3/bin:$PATH"
                         source $HOME/miniconda3/bin/activate healthcare_env
                         
-                        kubectl apply -f kubernetes/frontend.yaml
-                        kubectl apply -f kubernetes/backend.yaml
-                        kubectl apply -f kubernetes/elasticsearch.yaml
-                        kubectl apply -f kubernetes/kibana.yaml
-                        kubectl apply -f kubernetes/logstash.yaml
+                        # Assuming kubectl is in /usr/local/bin or modify path as needed
+                        /usr/local/bin/kubectl apply -f kubernetes/frontend.yaml || echo "kubectl frontend failed"
+                        /usr/local/bin/kubectl apply -f kubernetes/backend.yaml || echo "kubectl backend failed"
+                        /usr/local/bin/kubectl apply -f kubernetes/elasticsearch.yaml || echo "kubectl elasticsearch failed"
+                        /usr/local/bin/kubectl apply -f kubernetes/kibana.yaml || echo "kubectl kibana failed"
+                        /usr/local/bin/kubectl apply -f kubernetes/logstash.yaml || echo "kubectl logstash failed"
                         
                         conda deactivate
                     '''
