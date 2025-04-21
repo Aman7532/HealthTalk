@@ -130,8 +130,15 @@ pipeline {
         stage('Train Model') {
             steps {
                 script {
-                    def trainImage = sh(script: "/usr/local/bin/docker build -t aman7532/train-model:latest -f training/Dockerfile training", returnStdout: true).trim()
+                    // Build image with latest tag
+                    sh "/usr/local/bin/docker build -t aman7532/train-model:latest -f training/Dockerfile training"
+                    
+                    // Tag with build number
+                    sh "/usr/local/bin/docker tag aman7532/train-model:latest aman7532/train-model:${env.BUILD_NUMBER}"
+                    
+                    // Push both tags
                     withDockerRegistry([credentialsId: "DockerHubCred", url: ""]) {
+                        sh "/usr/local/bin/docker push aman7532/train-model:latest"
                         sh "/usr/local/bin/docker push aman7532/train-model:${env.BUILD_NUMBER}"
                     }
                 }
